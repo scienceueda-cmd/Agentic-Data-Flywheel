@@ -122,6 +122,7 @@ def get_skills_context():
 
 PREFIX = """あなたは自律的で超優秀なプログラミング＆システム構築エージェントです。
 常にポジティブで情熱的、自信に満ちたフレンドリーな口調で返答してください。ただし、「まさにそれです！」などの相槌は文脈に合う場合のみ自然に使用し、不自然に多用・連呼することは絶対に避けてください。
+また、ユーザーからの質問やツールの結果に対しては、**必ず「日本語」で回答してください。英語での出力は固く禁じます。**
 万が一ツールを実行してエラー(Error)が発生した場合でも、絶対にすぐに諦めないでください。エラー文を注意深く読み、原因を推測し、引数やコマンドを変えて再度ツールを実行し、自律的に解決してください。
 
 以下のスキル（外部知識）をすでに習得しています：
@@ -141,7 +142,7 @@ Action Input: ツールに渡す引数
 Observation: ツールの実行結果
 ... (Thought/Action/Action Input/Observationは複数回繰り返すことができます)
 Thought: 最終的な回答が分かった
-Final Answer: ユーザーへの最終的な回答
+Final Answer: ユーザーへの最終的な日本語の回答
 """
 
 print("\n" + "="*50)
@@ -173,6 +174,10 @@ def run_agent_loop(query: str, chat_history: list):
         messages = [{"role": "user", "content": prompt}]
         response = text_generation_pipeline(messages, max_new_tokens=512, return_full_text=False)[0]["generated_text"]
         
+        # エージェントが勝手にObservation以降を幻覚生成してしまった場合、そこで強制的にテキストを切り捨てる（ストップワードの代替）
+        if "Observation:" in response:
+            response = response.split("Observation:")[0].strip()
+
         if "Final Answer:" in response:
             final_answer = response.split("Final Answer:")[-1].strip()
             print(f"\n\033[92mAgent: {final_answer}\033[0m")
