@@ -1,5 +1,7 @@
 import os
 import json
+import shutil
+import datetime
 
 # ==========================================
 # 0. 設定ファイルの読み込みと環境変数の設定
@@ -112,26 +114,33 @@ print(f"学習完了！モデルを {save_path} に保存します...")
 model.save_pretrained(save_path)
 tokenizer.save_pretrained(save_path)
 
-# 学習完了後に不要になった一時ログを自動クリアする
-print("学習済みの一時ログファイル（cli_agent_logs.txt および ready_for_review 内のバッチ）をクリアしています...")
+# 学習完了後に不要になった一時ログを長期メモリに退避する
+print("学習済みの一時ログファイル（cli_agent_logs.txt および ready_for_review 内のバッチ）を長期メモリに退避しています...")
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 cli_log_path = os.path.join(base_dir, "data", "cli_agent_logs.txt")
 archive_dir = os.path.join(base_dir, "ready_for_review")
+long_term_memory_dir = os.path.join(base_dir, "data", "long_term_memory")
+
+os.makedirs(long_term_memory_dir, exist_ok=True)
+timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
 if os.path.exists(cli_log_path):
     try:
+        backup_path = os.path.join(long_term_memory_dir, f"cli_agent_logs_{timestamp}.txt")
+        shutil.copy2(cli_log_path, backup_path)
         with open(cli_log_path, "w", encoding="utf-8") as f:
             f.write("")
     except Exception as e:
-        print(f"CLIログのクリアに失敗しました: {e}")
+        print(f"CLIログの退避・クリアに失敗しました: {e}")
 
 if os.path.exists(archive_dir):
     for filename in os.listdir(archive_dir):
         file_path = os.path.join(archive_dir, filename)
         try:
             if os.path.isfile(file_path):
-                os.remove(file_path)
+                dest_path = os.path.join(long_term_memory_dir, filename)
+                shutil.move(file_path, dest_path)
         except Exception as e:
-            print(f"バッチファイルの削除に失敗しました {file_path}: {e}")
+            print(f"バッチファイルの退避に失敗しました {file_path}: {e}")
 
 print("全プロセスが完了しました！新しいエージェントAIの誕生です！")
