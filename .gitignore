@@ -1,0 +1,20 @@
+# Python / Cache
+__pycache__/
+*.pyc
+unsloth_compiled_cache/
+hf_cache/
+
+# User Data & Models
+lora_model/
+outputs/
+data/
+ready_for_review/
+*.jsonl
+*.db
+
+# Logs
+*.log
+chat_log.txt
+
+# Config (Keep personal paths private)
+config.json

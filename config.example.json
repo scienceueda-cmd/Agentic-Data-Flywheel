@@ -1,0 +1,6 @@
+{
+    "base_model_name": "unsloth/llama-3-8b-Instruct-bnb-4bit",
+    "lora_output_path": "lora_model",
+    "hf_cache_dir": "./hf_cache",
+    "description": "Base model and cache configurations. You can use relative or absolute paths."
+}

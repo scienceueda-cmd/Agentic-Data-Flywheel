@@ -1,0 +1,26 @@
+# Base PyTorch and HuggingFace
+# (torch is installed manually with CUDA in Setup.bat)
+transformers
+datasets
+accelerate
+bitsandbytes
+peft
+trl==0.14.0
+xformers
+
+# Unsloth
+unsloth
+unsloth_zoo
+
+# LangChain Agent Framework
+langchain
+langchain-community
+langchain-huggingface
+
+# Tools
+duckduckgo-search
+
+# API Server
+fastapi
+uvicorn
+pydantic
