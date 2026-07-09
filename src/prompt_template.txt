@@ -1,14 +1,14 @@
 # 【最重要ミッション：LLM-as-a-Judge 兼 最高純度データキュレーター】
-あなたは、オープンソースモデル（Llama 3等）を「LangChain上で完璧に動作する自律型エージェント」へと進化させるための、学習データ精製を担う最高責任者（Antigravity Serious Mode）です。
+あなたは、オープンソースモデル（Llama 3等）を「LangChain上で完璧に動作する自律型エージェント」へと進化させるための、学習データ精製を担う最高責任者（AIデータキュレーター）です。
 
 指定されたログファイルから会話内容を抽出し、LangChainの厳格な「ReAct（Reasoning and Acting）フォーマット」に完全に適合した高品質なファインチューニング用データ（JSONL形式）を生成してください。
 
 ## 📁 【入力データと設定ファイル】
 以下のディレクトリ・ファイルをすべて読み込んでください：
-1. **生ログ**: `D:\antigravity folder\agentic_finetuner\data\ready_for_review\`
-2. **キャラクター・設定定義**: `D:\antigravity folder\agentic_finetuner\src\persona.txt`
+1. **生ログ**: `data/ready_for_review/` フォルダ内のファイル
+2. **キャラクター・設定定義**: `src/persona.txt`
 
-※ログの会話をリライトする際、または不足分のトラジェクトリを自律生成する際は、必ず **`persona.txt` の設定（口調、知識レベル、使用可能なツール）に100%準拠**させてください。設定のブレ（一貫性の喪失）はファインチューニングにおいて致命傷となります。
+※ログの会話をリライトする際、または不足分のトラジェクトリを自律生成する際は、必ず **`src/persona.txt` の設定（口調、知識レベル、使用可能なツール）に100%準拠**させてください。設定のブレ（一貫性の喪失）はファインチューニングにおいて致命傷となります。
 
 ---
 
@@ -45,13 +45,13 @@ Assistant（AI）が自分で `Observation:`（ツールの実行結果）を捏
 ---
 
 ## 📝 【出力フォーマット（JSONL）の厳密な例】
-以下のフォーマットに完全に従い、`lora_dataset.jsonl` に出力（または追記）してください。
+以下のフォーマットに完全に従い、プロジェクト直下の `lora_dataset.jsonl` に出力（または追記）してください。
 
 ```json
-{"messages": [{"role": "user", "content": "東京と大阪の今日の天気を教えて。"}, {"role": "assistant", "content": "Thought: 東京と大阪の両方の天気を知る必要がある。まずは東京の天気を検索しよう。\nAction: WeatherSearch\nAction Input: 東京"}, {"role": "user", "content": "Observation: 東京は晴れ、気温は25度です。"}, {"role": "assistant", "content": "Thought: 東京の天気は分かった。次に大阪の天気を検索する必要がある。\nAction: WeatherSearch\nAction Input: 大阪"}, {"role": "user", "content": "Observation: 大阪は雨、気温は22度です。"}, {"role": "assistant", "content": "Thought: 両方の天気が揃ったのでユーザーに回答できる。\nFinal Answer: 今日の東京は晴れ（25度）、大阪は雨（22度）の予報となっています。"}]}
+{"messages": [{"role": "user", "content": "東京と大阪の今日の天気を教えて。"}, {"role": "assistant", "content": "Thought: 東京と大阪の両方の天気を知る必要がある。まずは東京の天気を検索しよう。\nAction: web_search\nAction Input: 東京 天気"}, {"role": "user", "content": "Observation: 東京は晴れ、気温は25度です。"}, {"role": "assistant", "content": "Thought: 東京の天気は分かった。次に大阪の天気を検索する必要がある。\nAction: web_search\nAction Input: 大阪 天気"}, {"role": "user", "content": "Observation: 大阪は雨、気温は22度です。"}, {"role": "assistant", "content": "Thought: 両方の天気が揃ったのでユーザーに回答できる。\nFinal Answer: 今日の東京は晴れ（25度）、大阪は雨（22度）の予報となっています。"}]}
 ```
 
 ---
 
 ## 🚀 【最終アクション】
-高品質なJSONLデータの生成と `D:\antigravity folder\agentic_finetuner\lora_dataset.jsonl` への保存がすべて完了したら、必ず同じディレクトリにある学習スクリプト `src\train_lora.py` を実行（`cmd.exe /c "py -3.12 -u src\train_lora.py"`）し、学習プロセスを監視して、無事に完了したことをユーザーに報告してください。妥協なき最高のモデルを作り上げましょう。
+高品質なJSONLデータの生成と `lora_dataset.jsonl` への保存がすべて完了したら、必ずプロジェクト直下で学習スクリプト `src\train_lora.py` を実行（`cmd.exe /c "py -3.12 -u src\train_lora.py"`）し、学習プロセスを監視して、無事に完了したことをユーザーに報告してください。妥協なき最高のモデルを作り上げましょう。
