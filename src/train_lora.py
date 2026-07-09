@@ -112,4 +112,26 @@ print(f"学習完了！モデルを {save_path} に保存します...")
 model.save_pretrained(save_path)
 tokenizer.save_pretrained(save_path)
 
+# 学習完了後に不要になった一時ログを自動クリアする
+print("学習済みの一時ログファイル（cli_agent_logs.txt および ready_for_review 内のバッチ）をクリアしています...")
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+cli_log_path = os.path.join(base_dir, "data", "cli_agent_logs.txt")
+archive_dir = os.path.join(base_dir, "ready_for_review")
+
+if os.path.exists(cli_log_path):
+    try:
+        with open(cli_log_path, "w", encoding="utf-8") as f:
+            f.write("")
+    except Exception as e:
+        print(f"CLIログのクリアに失敗しました: {e}")
+
+if os.path.exists(archive_dir):
+    for filename in os.listdir(archive_dir):
+        file_path = os.path.join(archive_dir, filename)
+        try:
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"バッチファイルの削除に失敗しました {file_path}: {e}")
+
 print("全プロセスが完了しました！新しいエージェントAIの誕生です！")
