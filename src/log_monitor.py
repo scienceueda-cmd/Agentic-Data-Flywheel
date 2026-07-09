@@ -19,7 +19,7 @@ DB_PATHS = [
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ARCHIVE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../ready_for_review"))
 CLI_LOG_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../data/cli_agent_logs.txt"))
-THRESHOLD_BYTES = 5000 
+THRESHOLD_BYTES = 20000 
 CHECK_INTERVAL_SECONDS = 10
 
 def send_toast_notification(batch_file_path, source="Open-WebUI"):
