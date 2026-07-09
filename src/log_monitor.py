@@ -19,7 +19,7 @@ DB_PATHS = [
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ARCHIVE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../ready_for_review"))
 CLI_LOG_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../data/cli_agent_logs.txt"))
-THRESHOLD_BYTES = 50000 
+THRESHOLD_BYTES = 5000 
 CHECK_INTERVAL_SECONDS = 10
 
 def send_toast_notification(batch_file_path, source="Open-WebUI"):
@@ -73,7 +73,6 @@ def monitor_db():
     os.makedirs(ARCHIVE_DIR, exist_ok=True)
     
     last_processed_size_webui = 0
-    last_processed_size_cli = 0
 
     while True:
         # 1. WebUI Database 監視
@@ -101,7 +100,7 @@ def monitor_db():
                     cli_text = f.read()
                 current_size_cli = len(cli_text.encode('utf-8'))
                 
-                if current_size_cli - last_processed_size_cli >= THRESHOLD_BYTES:
+                if current_size_cli >= THRESHOLD_BYTES:
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     batch_filename = f"review_batch_cli_{timestamp}.txt"
                     batch_path = os.path.join(ARCHIVE_DIR, batch_filename)
@@ -110,7 +109,11 @@ def monitor_db():
                         f.write(cli_text)
                         
                     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] CLIバッチを作成しました: {batch_filename}")
-                    last_processed_size_cli = current_size_cli
+                    
+                    # ログの重複を防ぐため、元のログファイルを空にする
+                    with open(CLI_LOG_PATH, 'w', encoding='utf-8') as f:
+                        f.write("")
+                        
                     send_toast_notification(batch_path, source="CLIエージェント")
             except Exception as e:
                 print(f"CLIログ読み込みエラー: {e}")
