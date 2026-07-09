@@ -160,8 +160,12 @@ def log_trajectory(trajectory: str):
     except Exception as e:
         print(f"\n\033[91m[Logging Error]: {e}\033[0m")
 
-def run_agent_loop(query: str):
-    prompt = PREFIX.replace("{skills_context}", get_skills_context()) + f"\n\nQuestion: {query}\n"
+def run_agent_loop(query: str, chat_history: list):
+    history_context = ""
+    if chat_history:
+        history_context = "\n\n[過去の会話履歴]\n" + "\n".join(chat_history)
+        
+    prompt = PREFIX.replace("{skills_context}", get_skills_context()) + history_context + f"\n\nQuestion: {query}\n"
     trajectory = f"User: {query}\n\n"
     max_steps = 5
     for step in range(max_steps):
@@ -174,6 +178,10 @@ def run_agent_loop(query: str):
             print(f"\n\033[92mAgent: {final_answer}\033[0m")
             trajectory += response.strip()
             log_trajectory(trajectory)
+            # 履歴に追加し、最新5件に保つ
+            chat_history.append(f"User: {query}\nAgent: {final_answer}")
+            if len(chat_history) > 5:
+                chat_history.pop(0)
             return
             
         if "Action:" in response and "Action Input:" in response:
@@ -207,10 +215,15 @@ def run_agent_loop(query: str):
             print(f"\n\033[92mAgent: {response.strip()}\033[0m")
             trajectory += response.strip()
             log_trajectory(trajectory)
+            # 履歴に追加
+            chat_history.append(f"User: {query}\nAgent: {response.strip()}")
+            if len(chat_history) > 5:
+                chat_history.pop(0)
             return
             
     print("\n\033[91m[Agent Error]: 最大反復回数(5回)に到達しました。\033[0m")
 
+chat_history = []
 while True:
     user_query = input("\nUser: ")
     if user_query.lower() == 'exit':
@@ -219,6 +232,6 @@ while True:
         continue
         
     try:
-        run_agent_loop(user_query)
+        run_agent_loop(user_query, chat_history)
     except Exception as e:
         print(f"\n\033[91m[Agent Error]: {e}\033[0m")
