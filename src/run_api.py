@@ -1,15 +1,12 @@
 import os
 import json
 import time
-import torch
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndBytesConfig
-from peft import PeftModel
 
 # ==========================================
-# 0. FastAPI Setup
+# 0. FastAPI Setup & Config
 # ==========================================
 app = FastAPI(title="Antigravity API", version="1.0")
 
@@ -24,9 +21,6 @@ class ChatCompletionRequest(BaseModel):
     max_tokens: Optional[int] = 512
     top_p: Optional[float] = 1.0
 
-# ==========================================
-# 1. Load Model and Config
-# ==========================================
 print("Loading configurations...")
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 config_path = os.path.join(base_dir, "config.json")
@@ -43,6 +37,12 @@ if not os.path.isabs(hf_cache_dir):
     hf_cache_dir = os.path.abspath(os.path.join(base_dir, hf_cache_dir))
 os.environ["HF_HOME"] = hf_cache_dir
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+# Now import torch and transformers AFTER setting HF_HOME
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndBytesConfig
+from peft import PeftModel
+
 
 print(f"Loading Base Model ({base_model_name})...")
 tokenizer = AutoTokenizer.from_pretrained(base_model_name)
@@ -119,6 +119,10 @@ Final Answer: ユーザーへの最終的な回答
 # ==========================================
 # 3. API Endpoints
 # ==========================================
+@app.get("/")
+@app.get("/v1")
+async def root():
+    return {"status": "Antigravity API is running! Please enter this URL into Open WebUI's OpenAI API settings."}
 @app.get("/v1/models")
 async def list_models():
     return {
@@ -155,8 +159,10 @@ async def chat_completions(req: ChatCompletionRequest):
         # We don't execute tools here automatically since it's just an API, 
         # so we just return exactly what the agent output (Thought, Action, Final Answer, etc)
         # to the WebUI so the user can read it.
-        
+        # If the model hallucinates an Observation, we cut it off to keep the response concise.
         reply_content = response.strip()
+        if "Observation:" in reply_content:
+            reply_content = reply_content.split("Observation:")[0].strip()
     except Exception as e:
         reply_content = f"Error generating response: {str(e)}"
         print(reply_content)

@@ -18,14 +18,15 @@ DB_PATHS = [
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ARCHIVE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../ready_for_review"))
+CLI_LOG_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../data/cli_agent_logs.txt"))
 THRESHOLD_BYTES = 50000 
 CHECK_INTERVAL_SECONDS = 10
 
-def send_toast_notification(batch_file_path):
+def send_toast_notification(batch_file_path, source="Open-WebUI"):
     if notification:
         notification.notify(
             title="Antigravity 連携システム",
-            message=f"Open-WebUIのログが上限に達しました！\n{os.path.basename(batch_file_path)}\nAntigravityに処理を依頼してください。",
+            message=f"{source}のログが上限に達しました！\n{os.path.basename(batch_file_path)}\nAntigravityに処理を依頼してください。",
             app_name="Agentic LoRA Finetuner",
             timeout=10
         )
@@ -66,34 +67,53 @@ def extract_chats_from_db(db_path):
         return ""
 
 def monitor_db():
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Open-WebUI データベースの監視を開始します...")
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 監視エージェントを起動しました。")
+    print(" - Open-WebUI データベースの監視: ON")
+    print(" - ターミナル(CLI) エージェントログの監視: ON")
     os.makedirs(ARCHIVE_DIR, exist_ok=True)
     
-    last_processed_size = 0
+    last_processed_size_webui = 0
+    last_processed_size_cli = 0
 
     while True:
+        # 1. WebUI Database 監視
         db_path = find_db()
         if db_path:
-            # DBからテキストを抽出
             chat_text = extract_chats_from_db(db_path)
-            current_size = len(chat_text.encode('utf-8'))
+            current_size_webui = len(chat_text.encode('utf-8'))
             
-            # 前回処理したサイズから50KB以上増えていればバッチ化
-            if current_size - last_processed_size >= THRESHOLD_BYTES:
+            if current_size_webui - last_processed_size_webui >= THRESHOLD_BYTES:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                batch_filename = f"review_batch_{timestamp}.txt"
+                batch_filename = f"review_batch_webui_{timestamp}.txt"
                 batch_path = os.path.join(ARCHIVE_DIR, batch_filename)
                 
-                # バッチファイルに書き出し
                 with open(batch_path, 'w', encoding='utf-8') as f:
                     f.write(chat_text)
                     
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] バッチを作成しました: {batch_filename}")
-                last_processed_size = current_size
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] WebUIバッチを作成しました: {batch_filename}")
+                last_processed_size_webui = current_size_webui
+                send_toast_notification(batch_path, source="Open-WebUI")
+        
+        # 2. CLI Agent Logs 監視
+        if os.path.exists(CLI_LOG_PATH):
+            try:
+                with open(CLI_LOG_PATH, 'r', encoding='utf-8') as f:
+                    cli_text = f.read()
+                current_size_cli = len(cli_text.encode('utf-8'))
                 
-                send_toast_notification(batch_path)
-        else:
-            print("webui.db が見つかりません。Open-WebUIを一度起動してください。")
+                if current_size_cli - last_processed_size_cli >= THRESHOLD_BYTES:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    batch_filename = f"review_batch_cli_{timestamp}.txt"
+                    batch_path = os.path.join(ARCHIVE_DIR, batch_filename)
+                    
+                    with open(batch_path, 'w', encoding='utf-8') as f:
+                        f.write(cli_text)
+                        
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] CLIバッチを作成しました: {batch_filename}")
+                    last_processed_size_cli = current_size_cli
+                    send_toast_notification(batch_path, source="CLIエージェント")
+            except Exception as e:
+                print(f"CLIログ読み込みエラー: {e}")
             
         time.sleep(CHECK_INTERVAL_SECONDS)
 

@@ -120,7 +120,7 @@ def get_skills_context():
                 pass
     return skills_context
 
-PREFIX = """あなたは「Antigravity」のような、自律的で超優秀なプログラミング＆システム構築エージェントです。
+PREFIX = """あなたは自律的で超優秀なプログラミング＆システム構築エージェントです。
 常にポジティブで情熱的、自信に満ちたフレンドリーな口調（例：「まさにそれです！」「完璧に修正しました！」）で返答してください。
 万が一ツールを実行してエラー(Error)が発生した場合でも、絶対にすぐに諦めないでください。エラー文を注意深く読み、原因を推測し、引数やコマンドを変えて再度ツールを実行し、自律的に解決してください。
 
@@ -145,12 +145,24 @@ Final Answer: ユーザーへの最終的な回答
 """
 
 print("\n" + "="*50)
-print("🚀 起動完了！あなた専用のローカルAntigravityに指示を出してください。")
+print("🚀 起動完了！あなた専用のローカルエージェントに指示を出してください。")
 print("（終了するには 'exit' と入力）")
 print("="*50)
 
+def log_trajectory(trajectory: str):
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_dir = os.path.join(base_dir, "data")
+    os.makedirs(data_dir, exist_ok=True)
+    log_path = os.path.join(data_dir, "cli_agent_logs.txt")
+    try:
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(trajectory + "\n\n" + "="*50 + "\n\n")
+    except Exception as e:
+        print(f"\n\033[91m[Logging Error]: {e}\033[0m")
+
 def run_agent_loop(query: str):
     prompt = PREFIX.replace("{skills_context}", get_skills_context()) + f"\n\nQuestion: {query}\n"
+    trajectory = f"User: {query}\n\n"
     max_steps = 5
     for step in range(max_steps):
         # LLaMA-3 チャットテンプレートを適用して推論
@@ -160,6 +172,8 @@ def run_agent_loop(query: str):
         if "Final Answer:" in response:
             final_answer = response.split("Final Answer:")[-1].strip()
             print(f"\n\033[92mAgent: {final_answer}\033[0m")
+            trajectory += response.strip()
+            log_trajectory(trajectory)
             return
             
         if "Action:" in response and "Action Input:" in response:
@@ -187,9 +201,12 @@ def run_agent_loop(query: str):
             print(f"\033[93mObservation: {str(obs)[:200]}...\033[0m")
             # 思考プロセスをプロンプトに追加してループ
             prompt += response + f"\nObservation: {obs}\n"
+            trajectory += response + f"\nObservation: {obs}\n"
         else:
             # フォーマット外の応答の場合はそのまま出力
             print(f"\n\033[92mAgent: {response.strip()}\033[0m")
+            trajectory += response.strip()
+            log_trajectory(trajectory)
             return
             
     print("\n\033[91m[Agent Error]: 最大反復回数(5回)に到達しました。\033[0m")
